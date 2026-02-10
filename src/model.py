@@ -3,55 +3,126 @@ model.py
 
 Purpose:
 ---------
-Defines the neural network architecture for the garbage classification model.
+Defines the multimodal neural network architecture for the garbage
+classification task.
 
-The model MUST:
----------------
-- Use a CNN for image feature extraction
-- Use a separate encoder for text features
-- Fuse image + text features before classification
-- Output logits for multi-class classification
+This model uses:
+- A PRE-TRAINED CNN for image feature extraction
+- A (simple or pre-trained) text encoder
+- Feature fusion (concatenation)
+- A small classifier head trained on the garbage dataset
 
-IMPORTANT:
-----------
-- Do NOT include training or evaluation loops here
-- Do NOT load data here
-- Keep the forward pass clean and readable
+IMPORTANT (from instructor clarification):
+------------------------------------------
+- The image encoder SHOULD be pre-trained (e.g. ResNet, EfficientNet, ViT)
+- We are STILL training on our Assignment 1 garbage images
+- Pre-training only provides a better initialization
+
+This file should ONLY define the model architecture.
+NO training loops or data loading logic here.
 """
 
 import torch
 import torch.nn as nn
+import torchvision.models as models
+
 
 class GarbageClassifier(nn.Module):
     """
-    Multimodal garbage classification model.
+    Multimodal Garbage Classification Model
 
     Architecture:
     -------------
-    Image -> CNN -> image_features
-    Text  -> Text Encoder -> text_features
-    Concatenate(image_features, text_features)
-    -> Fully Connected Classifier
+    Image (Assignment 1 photo)
+        -> Pre-trained CNN (feature extractor)
+        -> Image feature vector
+
+    Text (metadata / description)
+        -> Text encoder
+        -> Text feature vector
+
+    [Image features | Text features]
+        -> Fully connected classifier
+        -> Class logits
     """
 
-    def __init__(self, num_classes):
-        super(GarbageClassifier, self).__init__()
-
-        # TODO:
-        # - Define CNN layers for image branch
-        # - Define text encoder (embedding / FC layers)
-        # - Define fusion + classifier layers
-        pass
-
-    def forward(self, image, text):
+    def __init__(self, num_classes: int, text_feature_dim: int = 128):
         """
         Args:
         -----
+        num_classes (int): number of output classes (e.g. 4)
+        text_feature_dim (int): dimensionality of text feature vector
+                                 (depends on dataset / encoding choice)
+        """
+        super(GarbageClassifier, self).__init__()
+
+        # -------------------------------------------------
+        # IMAGE ENCODER (PRE-TRAINED CNN)
+        # -------------------------------------------------
+        # Using a pre-trained ResNet as feature extractor
+        self.image_encoder = models.resnet18(pretrained=True)
+
+        # Remove the final classification layer
+        image_feature_dim = self.image_encoder.fc.in_features
+        self.image_encoder.fc = nn.Identity()
+
+        # Optionally freeze CNN weights (can be unfrozen later)
+        for param in self.image_encoder.parameters():
+            param.requires_grad = False
+
+        # -------------------------------------------------
+        # TEXT ENCODER
+        # -------------------------------------------------
+        # NOTE:
+        # - This can be a simple embedding + FC layer
+        # - OR replaced with a pre-trained text model if desired
+        self.text_encoder = nn.Sequential(
+            nn.Linear(text_feature_dim, 128),
+            nn.ReLU()
+        )
+
+        text_embedding_dim = 128
+
+        # -------------------------------------------------
+        # FEATURE FUSION + CLASSIFIER
+        # -------------------------------------------------
+        fused_feature_dim = image_feature_dim + text_embedding_dim
+
+        self.classifier = nn.Sequential(
+            nn.Linear(fused_feature_dim, 256),
+            nn.ReLU(),
+            nn.Dropout(p=0.3),
+            nn.Linear(256, num_classes)
+        )
+
+    def forward(self, image, text):
+        """
+        Forward pass
+
+        Args:
+        -----
         image : torch.Tensor
-        text  : torch.Tensor
+            Image tensor of shape [batch_size, 3, H, W]
+
+        text : torch.Tensor
+            Text tensor of shape [batch_size, text_feature_dim]
 
         Returns:
         --------
-        logits : torch.Tensor of shape [batch_size, num_classes]
+        logits : torch.Tensor
+            Raw class scores of shape [batch_size, num_classes]
         """
-        pass
+
+        # Extract image features
+        image_features = self.image_encoder(image)
+
+        # Extract text features
+        text_features = self.text_encoder(text)
+
+        # Concatenate features
+        fused_features = torch.cat((image_features, text_features), dim=1)
+
+        # Classification
+        logits = self.classifier(fused_features)
+
+        return logits
