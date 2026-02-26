@@ -25,6 +25,7 @@ NO training loops or data loading logic here.
 import torch
 import torch.nn as nn
 import torchvision.models as models
+from torchvision.models import resnet18, ResNet18_Weights
 
 
 class GarbageClassifier(nn.Module):
@@ -51,8 +52,7 @@ class GarbageClassifier(nn.Module):
         Args:
         -----
         num_classes (int): number of output classes (e.g. 4)
-        text_feature_dim (int): dimensionality of text feature vector
-                                 (depends on dataset / encoding choice)
+        text_feature_dim (int): dimensionality of text feature vector (depends on dataset / encoding choice)
         """
         super(GarbageClassifier, self).__init__()
 
@@ -60,7 +60,7 @@ class GarbageClassifier(nn.Module):
         # IMAGE ENCODER (PRE-TRAINED CNN)
         # -------------------------------------------------
         # Using a pre-trained ResNet as feature extractor
-        self.image_encoder = models.resnet18(pretrained=True)
+        self.image_encoder = resnet18(weights=ResNet18_Weights.DEFAULT)
 
         # Remove the final classification layer
         image_feature_dim = self.image_encoder.fc.in_features

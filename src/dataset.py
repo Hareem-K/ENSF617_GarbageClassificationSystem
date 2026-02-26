@@ -14,8 +14,8 @@ This file:
 
 import os
 import torch
-from torch.utils.data import Dataset
 from PIL import Image
+from torch.utils.data import Dataset
 
 
 class GarbageDataset(Dataset):
@@ -46,7 +46,15 @@ class GarbageDataset(Dataset):
             "/work/TALC/ensf617_2026w/garbage_data"
         )
 
-        self.split_path = os.path.join(self.dataset_root, split)
+        # Map our internal split names to the actual dataset folder names
+        folder_mapping = {
+            "train": "CVPR_2024_dataset_Train",
+            "val": "CVPR_2024_dataset_Val",
+            "test": "CVPR_2024_dataset_Test"
+        }
+        target_folder = folder_mapping[split]
+
+        self.split_path = os.path.join(self.dataset_root, target_folder)
 
         # Class names
         self.classes = ["Black", "Blue", "Green", "Other"]
