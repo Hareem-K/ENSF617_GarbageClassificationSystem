@@ -13,11 +13,10 @@ Group Members:
 
 ### Repository Structure
 src/
-  ├── dataset.py -> Defines the custom PyTorch Dataset class for loading images and labels.
-  ├── preprocessing.py -> Contains image transformation and preprocessing functions.
-  ├── model.py -> Implements the model architecture using transfer learning.
-  ├── train.py -> Contains the training and validation loop logic.
+- dataset.py – Defines the custom PyTorch Dataset class for loading images and labels.
+- preprocessing.py – Contains image transformation and preprocessing functions.
+- model.py – Implements the model architecture using transfer learning.
+- train.py – Contains the training and validation loop logic.
 
 notebooks/
-  └── Final Notebook
-        └── Garbage_Classification.ipynb -> Final notebook with model training, evaluation metrics, and plots.
+- Garbage_Classification.ipynb – Final notebook with model training, evaluation metrics, and plots.
